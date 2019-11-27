@@ -23,6 +23,7 @@ namespace CSClient1
             WebHost.CreateDefaultBuilder(args)
                 .UseUrls("http://localhost:" + PORT)
                 .UseKestrel()
+                .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseStartup<Startup>();
     }
 }
