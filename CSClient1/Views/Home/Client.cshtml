@@ -1,0 +1,148 @@
+﻿<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+<head>
+    <title>TODO supply a title</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+    <script>
+            //var tipus = document.getElementById('tipus').value();
+            //var nev = document.getElementById('nev').value();
+            var guid;
+
+            class Ac4yRestServiceClient {
+                constructor(host){this.host=host;}
+                getHost(){return this.host;};
+                jsonContent(){return new Headers({'Content-Type': 'application/json'});}
+                async get(path) {
+                    const promise = await fetch(this.getHost()+path);
+                    return await promise.json();
+                }
+                async post(path, request) {
+                    const promise = await fetch(
+                        this.getHost()+path
+                        ,{
+                            method: 'POST'
+                            ,body: JSON.stringify(request)
+                            ,headers: this.jsonContent()
+                        }
+                    );
+                    return await promise.json();
+                } // post
+             } // Ac4yRestServiceClient
+
+             class Ac4yObjectHomeRestServiceClient extends Ac4yRestServiceClient {
+                async setByNames(request) {return await this.post("/api/CSAc4yObjectRestService/SetByNames", request)}
+             }; // Ac4yObjectHomeRestServiceClient
+
+            var restServiceClient = new Ac4yObjectHomeRestServiceClient( "http://80.211.241.82:8003" );
+
+            async function start() {
+                var tipus = document.getElementById("tipus").value;
+                var nev = document.getElementById("nev").value;
+                var response = await restServiceClient.setByNames({templateName: tipus, name: nev});
+                console.log(response);
+                guid = response.ac4yObjectHome.guid;
+
+                //var response2 = await taroltEljarasRestServiceClient.saveWithXml({GUID: guid});
+                //console.log(response2);
+
+                var response3 = await taroltEljarasRestServiceClient.loadXmlByGuid(guid);
+                document.getElementById("xml").innerHTML = response3.object.serialization;
+                console.log(response3);
+
+                var xml = document.getElementById("xmlIn").value;
+                var xsl = document.getElementById("xslIn").value;
+                var response4 = await taroltEljarasRestServiceClient.loadHtml({xml: xml, xsl: xsl});
+                document.getElementById("htmlOut").innerHTML = response4.object;
+                            }
+
+
+             class Ac4yTaroltEljarasRestServiceClient extends Ac4yRestServiceClient {
+                async saveWithXml(request) {return await this.post("/api/TaroltEljarasRestService/SaveWithXml", request)}
+                async loadXmlByGuid(guid) {return await this.get("/api/TaroltEljarasRestService/LoadXmlByGuid/"+guid)}
+                async loadHtml(request) {return await this.post("/api/ModulRestService/LoadHtml", request)}
+            }; // Ac4yObjectHomeRestServiceClient
+
+            var taroltEljarasRestServiceClient = new Ac4yTaroltEljarasRestServiceClient( "http://80.211.241.82:8002" );
+
+            /*
+            async function startTaroltEljaras(guidPost) {
+                console.log("Guid: " + guidPost)
+                var response = await taroltEljarasRestServiceClient.saveWithXml({GUID: guidPost});
+                console.log(response);
+                            }
+
+            async function startGetTaroltEljarasByGuid() {
+                var response = await taroltEljarasRestServiceClient.loadXmlByGuid();
+                console.log(response.json());
+            }
+
+            //Az egyik GET metódushoz állítja be az url címet
+            var theUrl = 'http://80.211.241.82:8002/api/TaroltEljarasRestService/GetFirstWithXml/15';
+            //A fentebb
+            fetch(theUrl)
+            .then(response => response.json())
+            .then(data => {
+              console.log(data) // Prints result from `response.json()` in getRequest
+            })
+            .catch(error => console.error(error))*/
+
+            var openFile = function(event) {
+                var input = event.target;
+
+                var reader = new FileReader();
+                reader.onload = function(){
+                    var text = reader.result;
+                    document.getElementById('xml').innerHTML = reader.result;
+                };
+                reader.readAsText(input.files[0]);
+            };
+
+            function saveTextAsFile()
+            {
+                var textToWrite = document.getElementById("xml").value;
+                var textFileAsBlob = new Blob([textToWrite], {type:'text/xml'});
+                var fileNameToSaveAs = document.getElementById("fileName").value;
+
+                var downloadLink = document.createElement("a");
+                downloadLink.download = fileNameToSaveAs;
+                downloadLink.innerHTML = "Download File";
+                if (window.webkitURL != null)
+                {
+                    // Chrome allows the link to be clicked
+                    // without actually adding it to the DOM.
+                    downloadLink.href = window.webkitURL.createObjectURL(textFileAsBlob);
+                }
+                else
+                {
+                    // Firefox requires the link to be added to the DOM
+                    // before it can be clicked.
+                    downloadLink.href = window.URL.createObjectURL(textFileAsBlob);
+                    downloadLink.onclick = destroyClickedElement;
+                    downloadLink.style.display = "none";
+                    document.body.appendChild(downloadLink);
+                }
+
+                downloadLink.click();
+            }
+
+    </script>
+    Típus: <input type="text" id="tipus" value="tárolt eljárás"><br><br>
+    Név: <input type="text" id="nev" value="Tor_Bankszamla_Kezeles"><br><br>
+    <textarea id="xml" rows="10" cols="50">Xml formátumú fájl</textarea><br><br>
+    Mentés ezen a néven: <input id="fileName" type="text">
+    <button type="button" onclick="saveTextAsFile()">Letöltés</button><br><br>
+    Feltöltés: <input type='file' accept='text/plain' onchange='openFile(event)'><br>
+    <textarea id="xmlIn" rows="10" cols="50"></textarea>
+    <textarea id="xslIn" rows="10" cols="50"></textarea>
+    <textarea id="htmlOut" rows="10" cols="50"></textarea><br>
+    Próba: <button type="button" onclick="start()">Start</button>
+</body>
+</html>
